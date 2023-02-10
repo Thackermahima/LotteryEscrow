@@ -63,10 +63,10 @@ contract LotteryEscrow is ERC721URIStorage{
 
         return tokenId;
     }
-    function setTokenURIs(string[] memory tokenURIs, uint256[] memory tokenIDs) public {
-        for (uint256 i = 0; i < tokenIDs.length; i++) {
-          _setTokenURI(tokenIDs[i],tokenURIs[i]);
-        } 
+    function setTokenURIs(uint256 tokenIDs,string memory tokenURIs) public {
+        //for (uint256 i = 0; i < tokenIDs.length; i++) {
+          _setTokenURI(tokenIDs,tokenURIs);
+        //} 
     }
     //Function to select a tokenID randomely
     function selectRandomTokenId() public view returns (uint256) {

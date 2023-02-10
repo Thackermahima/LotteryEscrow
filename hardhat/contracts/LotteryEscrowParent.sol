@@ -5,9 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 //import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import "./LotteryEscrow.sol";
-
    
-
  contract LotteryEscrowParent is Ownable{
 
     event TokenCreated(address, address);
@@ -19,6 +17,8 @@ import "./LotteryEscrow.sol";
 
 
     mapping (address => uint256[] ) contractTokenIds;
+    // mapping (uint256 => string) public tokenURIs;
+
     //address[] tokenContracts;    
     function createToken(string memory name, string memory symbol) public {
         address _address = address(new LotteryEscrow(name, symbol)); // Created Token contract.
@@ -48,9 +48,18 @@ import "./LotteryEscrow.sol";
         
         getNFTCount = count;
    } 
-   function BulkSetTokenURI(address tokenContractAddress, uint256[] memory tokenIDs, string[] memory tokenURIs) public {
-     LotteryEscrow(tokenContractAddress).setTokenURIs(tokenURIs,tokenIDs);
-   }
+//   function setTokenURI(uint256[] memory tokenIds, string[] memory tokenURI) public {
+//     tokenURIs[tokenIds] = tokenURI; 
+//   }
+//   function getTokenURI(uint256[] memory tokenId) public view returns(string memory){
+//     return tokenURIs[tokenId];
+//   }
+   function BulkSetTokenURI(address tokenContractAddress, uint256[] memory tokenIDs, string[] memory tokenURIs ) public {
+    for (uint256 i = 0; i < tokenIDs.length; i++) {
+        LotteryEscrow(tokenContractAddress).setTokenURIs(tokenIDs[i],tokenURIs[i]);
+        //_setTokenURI(tokenIDs[i],tokenURIs[i]);
+      } 
+}
 //    function setTokenId(uint256 tokenId, address tokenContractAddress) public {
 //     tokenIds[tokenContractAddress].push(tokenId);   
 //     }

@@ -10,8 +10,6 @@ module.exports = {
     goerli: {
       url: url,
       accounts: [pk],
-      gas: 2100000,
-      gasPrice: 8000000000,
     },
   },
 };

@@ -1,6 +1,7 @@
  
 import './App.css';
-import UploadFormNft from './components/UploadFormNft';
+import LotteryEscrowContext from './components/LotteryEscrowContext';
+import UploadForm from './components/UploadForm';
 import { Routes, Route } from 'react-router-dom';
 import NftReadership from './components/NftReadershipList';
 import Header from './Header';
@@ -9,7 +10,7 @@ function App() {
     <>
     <Header />
     <Routes>
-    <Route path="/upload-form-nft" element={ <UploadFormNft/>} />
+    <Route path="/upload-form-nft" element={ <UploadForm />} />
     <Route path="/nftlist" element={ <NftReadership/>} />
 
     </Routes>

@@ -1,5 +1,5 @@
-export const LotteryEscrowParentContract = "0x910a9eF6B908a0d7DDC80Aec4D8A2Aa2F3250538";
-export const lotteryEscrowABI = [
+export const LotteryEscrowParentContract = "0xD7b60fdeAcE6BDC23A41067EE5804Bb4fA7231c7";
+export const lotteryEscrowABI =  [
   {
     "inputs": [
       {
@@ -506,14 +506,14 @@ export const lotteryEscrowABI = [
   {
     "inputs": [
       {
-        "internalType": "string[]",
-        "name": "tokenURIs",
-        "type": "string[]"
+        "internalType": "uint256",
+        "name": "tokenIDs",
+        "type": "uint256"
       },
       {
-        "internalType": "uint256[]",
-        "name": "tokenIDs",
-        "type": "uint256[]"
+        "internalType": "string",
+        "name": "tokenURIs",
+        "type": "string"
       }
     ],
     "name": "setTokenURIs",
@@ -637,7 +637,7 @@ export const lotteryEscrowABI = [
     "type": "function"
   }
 ];
-export const lotteryEscrowParentABI = [
+export const lotteryEscrowParentABI =[
   {
     "anonymous": false,
     "inputs": [
