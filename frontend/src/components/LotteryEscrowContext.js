@@ -21,7 +21,7 @@ const LotteryEscrowContextProvider = (props) => {
   const [ImgArr, setImgArr] = useState([]);
   const [AllFilesArr, setAllFilesArr] = useState([]);
   const [AllTokenURIs, setAllTokenURIs] = useState([]);
-
+  const [getCollection, setGetCollection] = useState();
   const notify = () => toast("NFT Created Successfully !!");
 
   const authorNameEvent = (e) => {
@@ -52,8 +52,8 @@ const LotteryEscrowContextProvider = (props) => {
   const ipfs = create(ifpsConfig);
   const addDataToIPFS = async (metadata) => {
     const ipfsHash = await ipfs.add(metadata);
-    console.log(ipfsHash.cid, "IPFSHash cid");
-    console.log(ipfsHash.path, "IPFSHash path");
+    // console.log(ipfsHash.cid, "IPFSHash cid");
+    // console.log(ipfsHash.path, "IPFSHash path");
     return ipfsHash.path;
   };
   const createSvgFromText = (text) => {
@@ -101,7 +101,6 @@ const LotteryEscrowContextProvider = (props) => {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
     const signature = await signer.signMessage(address);
-    console.log(signature, "signture from onFormClick button");
     const escrowContract = new ethers.Contract(
       LotteryEscrowParentContract,
       lotteryEscrowParentABI,
@@ -112,14 +111,12 @@ const LotteryEscrowContextProvider = (props) => {
       authorname,
       symbol
     );
-    console.log(transactionCreate, "createToken");
     let txc = await transactionCreate.wait();
     if (txc) {
       setLoading(false);
       console.log(txc, "Successfully created!");
     }
     let event = txc.events[0];
-    console.log(event, "Event");
     let tokenContractAddress = event.args[1];
     let userAdd = localStorage.getItem("currentUserAddress");
     localStorage.setItem("tokenContractAddress", tokenContractAddress);
@@ -141,70 +138,84 @@ const LotteryEscrowContextProvider = (props) => {
     let imageArr = [];
     let filesArr = [];
 
-    tokenIds.map(async (tokenId) => {
-      console.log(parseInt(tokenId), "parseInt(tokenId)");
-      tokenIdArr.push(parseInt(tokenId));
-      const imgSVG = createSvgFromText(tokenId.toString());
-      console.log(imgSVG, "imgSVG");
-      const svgImg = await convertSVGToBuffer(imgSVG);
-      const ipfsHash = await addDataToIPFS(svgImg);
-      console.log(ipfsHash, "ipfsHash from addDataToIPFS function");
-      const imageUrl = `https://ipfs.io/ipfs/${ipfsHash}`;
-      imageArr.push(imageUrl);
-
-      setImgArr(imageArr);
-     
+    var result = await Promise.all(
+      tokenIds.map(async (tokenId) => {
+        // console.log(parseInt(tokenId), "parseInt(tokenId)");
+        tokenIdArr.push(parseInt(tokenId));
+        const imgSVG = createSvgFromText(tokenId.toString());
+        // console.log(imgSVG, "imgSVG");
+        const svgImg = await convertSVGToBuffer(imgSVG);
+        const ipfsHash = await addDataToIPFS(svgImg);
+        // console.log(ipfsHash, "ipfsHash from addDataToIPFS function");
+        const imageUrl = `https://ipfs.io/ipfs/${ipfsHash}`;
+        imageArr.push(imageUrl);
   
-      setLoading(true);
-      // const tokenURIs = await escrowContract.BulkSetTokenURI(
-      //   tokenContractAddress,
-      //   tokenIdArr,
-      //   imageArr
-      // );
-      // let txURI = await tokenURIs.wait();
+        setImgArr(imageArr);
+        return imageUrl;
+        
+        // const tokenURIs = await escrowContract.BulkSetTokenURI(
+        //   tokenContractAddress,
+        //   tokenIdArr,
+        //   imageArr
+        // );
+        // let txURI = await tokenURIs.wait();
+  
+        // if (txURI) {
+        //   setLoading(false);
+        //   const nftContract = new ethers.Contract(
+        //     tokenContractAddress,
+        //     lotteryEscrowABI,
+        //     signer
+        //   );
+        //   tokenIds.map(async (tokenID) => {
+        //     let AllUris = [];
+        //     let uriss = await nftContract.tokenURI(parseInt(tokenID));
+        //     AllUris.push(uriss);
+        //     setAllTokenURIs(AllUris);
+        //     console.log(uriss,"AllUris");
+        //   });
+        //  }
+  
+        
+      })
+    ) 
 
-      // if (txURI) {
-      //   setLoading(false);
-      //   const nftContract = new ethers.Contract(
-      //     tokenContractAddress,
-      //     lotteryEscrowABI,
-      //     signer
-      //   );
-      //   tokenIds.map(async (tokenID) => {
-      //     let AllUris = [];
-      //     let uriss = await nftContract.tokenURI(parseInt(tokenID));
-      //     AllUris.push(uriss);
-      //     setAllTokenURIs(AllUris);
-      //     console.log(uriss,"AllUris");
-      //   });
-      //  }
-
-      
-    });
-    const blob = new Blob(
+     const blob = new Blob(
       [
         JSON.stringify({
           authorname,
           symbol,
           tokenPrice,
           tokenQuantity,
-            ImgArr,
-        }),
+          result,
+        }), 
       ],
       { type: "application/json" }
     );
     const files = [new File([blob], "data.json")];
     const path = await addDataToIPFS(files[0]);
     const uri = `https://ipfs.io/ipfs/${path}`;
+    console.log(uri,"last uri")
     filesArr.push(uri);
     setAllFilesArr(filesArr);
     setLoading(false);
     notify();
+
+   const setCollectionOfUri = await escrowContract.setCollectionUri(tokenContractAddress,uri);
+   setLoading(true);
+   const txs = await setCollectionOfUri.wait();
+   if(txs){
+    setLoading(false);
+    console.log(setCollectionOfUri,"setCollectionOfUris");
+   }
+  const getCollectionOfUri = await escrowContract.getCollectionUri(tokenContractAddress);
+  setGetCollection(getCollectionOfUri);
+   console.log(getCollectionOfUri,"getCollectionOfUri");
+   
   };
-  useEffect(() => {
-    console.log(ImgArr, "ImgArr");
-    console.log(AllFilesArr, "AllFilesArr");
-  },[ImgArr,AllFilesArr])
+  // useEffect(() => {
+  //  console.log(getCollection,"getCollection state");
+  // },[getCollection]);
     
   let Item = {
     authorname: authorname,
@@ -227,7 +238,8 @@ const LotteryEscrowContextProvider = (props) => {
         tokenQuantity,
         tokenQuantityEvent,
         loading,
-        onFormSubmit
+        onFormSubmit,
+        getCollection
       }}
     >
       {props.children} 
