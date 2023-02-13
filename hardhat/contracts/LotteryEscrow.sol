@@ -2,18 +2,14 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
-// import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol"; 
-//import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 contract LotteryEscrow is ERC721URIStorage{
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
     uint256 public feePercent = 2; //the fee percntage on sales
-    // address payable public feeAccount;
     mapping(uint256 => address payable) public OwnerOfAnNFT;
     address payable public winner;
-
-    
+  
     struct MarketItem {
         address nftContract;
         uint256 tokenId;
@@ -22,7 +18,6 @@ contract LotteryEscrow is ERC721URIStorage{
         uint256 price;
         bool sold;
     }
-
     event MarketItemCreated(
         address indexed nftContract,
         uint256 indexed tokenId,
@@ -43,8 +38,7 @@ contract LotteryEscrow is ERC721URIStorage{
     {}
 
     function safeMint(address payable to, uint256 price) public returns (uint256) {
-        require(to != address(0), "The recipient address must not be zero");
-        
+        //require(to != address(0), "The recipient address must not be zero");   
         uint256 tokenId = _tokenIdCounter.current();
         require(OwnerOfAnNFT[tokenId] == address(0), "The tokenId is already taken");
         // Store the owner of the tokenId or NFT
@@ -63,11 +57,12 @@ contract LotteryEscrow is ERC721URIStorage{
 
         return tokenId;
     }
-    function setTokenURIs(uint256 tokenIDs,string memory tokenURIs) public {
-        //for (uint256 i = 0; i < tokenIDs.length; i++) {
-          _setTokenURI(tokenIDs,tokenURIs);
-        //} 
-    }
+    // function setTokenURIs(uint256 tokenIDs,string memory tokenURIs) public {
+    //     //for (uint256 i = 0; i < tokenIDs.length; i++) {
+    //       _setTokenURI(tokenIDs,tokenURIs);
+    //     //} 
+    // }
+   
     //Function to select a tokenID randomely
     function selectRandomTokenId() public view returns (uint256) {
         uint256[] memory allTokenIds;
@@ -118,10 +113,6 @@ contract LotteryEscrow is ERC721URIStorage{
         emit Bought(address(this), item.tokenId, item.price, item.seller, to);
         
     } 
- 
-   
-       
-   
     function getTotalPrice(uint256 tokenId) public view returns (uint256) {
         return ((marketItems[tokenId].price * (100 + feePercent)) / 100);
     }   

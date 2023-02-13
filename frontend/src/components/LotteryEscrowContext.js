@@ -1,8 +1,6 @@
 import React, { useState, useEffect, createContext } from "react";
 import { ethers } from "ethers";
-// import { Web3Storage } from "web3.storage";
 import { create } from "ipfs-http-client";
-// import { NFTStorage, File } from "nft.storage";
 import { renderToStaticMarkup } from "react-dom/server";
 import { toast } from "react-toastify";
 import {
@@ -10,7 +8,6 @@ import {
   lotteryEscrowABI,
   LotteryEscrowParentContract,
 } from "../abi";
-// import EpnsSDK from "@epnsproject/backend-sdk-staging";
 import { Buffer } from "buffer";
 
 export const LotteryEscrowContext = createContext();
@@ -22,10 +19,8 @@ const LotteryEscrowContextProvider = (props) => {
   const [loading, setLoading] = useState(false);
   const [AllTokenIds, setAllTokenIds] = useState();
   const [ImgArr, setImgArr] = useState([]);
-  const [ImgUrl, setImgUrl] = useState();
+  const [AllFilesArr, setAllFilesArr] = useState([]);
   const [AllTokenURIs, setAllTokenURIs] = useState([]);
-  // const NFT_STORAGE_API_TOKEN = process.env.REACT_APP_NFT_STORAGE_API_TOKEN;
-  // const client = new NFTStorage({ token: NFT_STORAGE_API_TOKEN });
 
   const notify = () => toast("NFT Created Successfully !!");
 
@@ -125,13 +120,10 @@ const LotteryEscrowContextProvider = (props) => {
     }
     let event = txc.events[0];
     console.log(event, "Event");
-    // let tokenContractAddress = event?.address;
     let tokenContractAddress = event.args[1];
     let userAdd = localStorage.getItem("currentUserAddress");
     localStorage.setItem("tokenContractAddress", tokenContractAddress);
-    // nftData.set("tokenContractAddress", tokenContractAddress);
-    // nftData.set("CurrentUser", userAdd);
-    //let userAdd = event.args[0]
+
     setLoading(true);
     let transactionBulkMint = await escrowContract.bulkMintERC721(
       address,
@@ -142,33 +134,13 @@ const LotteryEscrowContextProvider = (props) => {
     );
     let txb = await transactionBulkMint.wait();
     if (txb) {
-      try {
-        const PK = process.env.REACT_APP_EPNS_PRIVATE_KEY;
-        const Pkey = `0x${PK}`;
-        // const epnsSdk = new EpnsSDK(Pkey)
-        // console.log(epnsSdk, "epnsSDK");
-        // const txEPNS = await epnsSdk.sendNotification(
-        //   userAdd,
-        //   "Hey there",
-        //   "Welcome to the BugBuzzer",
-        //   `${authorname} Created NFT`,
-        //   ` Uploaded collection of ${symbol} NFTs successfully!`,
-        // 3, //this is the notificationType
-        // '', // a url for users to be redirected to
-        // '',// an image url, or an empty string
-        // null, //this can be left as null
-        // );
-        // console.log(txEPNS, "txEPNS");
-      } catch (error) {
-        console.log(error.response.data, "error.response.data");
-      }
       setLoading(false);
     }
-    //let tokenCount = await escrowContract.getCountValue();
     let tokenIds = await escrowContract.getAllTokenId(tokenContractAddress);
     let tokenIdArr = [];
-    let filesArr = [];
     let imageArr = [];
+    let filesArr = [];
+
     tokenIds.map(async (tokenId) => {
       console.log(parseInt(tokenId), "parseInt(tokenId)");
       tokenIdArr.push(parseInt(tokenId));
@@ -178,73 +150,62 @@ const LotteryEscrowContextProvider = (props) => {
       const ipfsHash = await addDataToIPFS(svgImg);
       console.log(ipfsHash, "ipfsHash from addDataToIPFS function");
       const imageUrl = `https://ipfs.io/ipfs/${ipfsHash}`;
-      setImgUrl(imageUrl);
       imageArr.push(imageUrl);
+
       setImgArr(imageArr);
-      console.log(tokenIdArr, "tokenIdArr");
-      console.log(imageArr, "imageArr");
+     
+  
       setLoading(true);
-      const tokenURIs = await escrowContract.BulkSetTokenURI(
-        tokenContractAddress,
-        tokenIdArr,
-        imageArr
-      );
-      let txURI = await tokenURIs.wait();
-      if (txURI) {
-        const nftContract = new ethers.Contract(
-          tokenContractAddress,
-          lotteryEscrowABI,
-          signer
-        );
-        tokenIds.map(async (tokenID) => {
-          let AllUris = [];
-          let uriss = await nftContract.tokenURI(parseInt(tokenID));
-          AllUris.push(uriss);
-          setAllTokenURIs(AllUris);
-          console.log(uriss,"AllUris");
-        });
-        setLoading(false);
-        //console.log(AllTokenURIs,"AllTokenURIs in a function");
-      }
+      // const tokenURIs = await escrowContract.BulkSetTokenURI(
+      //   tokenContractAddress,
+      //   tokenIdArr,
+      //   imageArr
+      // );
+      // let txURI = await tokenURIs.wait();
 
-      const blob = new Blob(
-        [
-          JSON.stringify({
-            authorname,
-            symbol,
-            tokenPrice,
-            tokenQuantity,
-            imageUrl,
-          }),
-        ],
-        { type: "application/json" }
-      );
-      const files = [new File([blob], "data.json")];
-      const path = await addDataToIPFS(files[0]);
-      const uri = `https://ipfs.io/ipfs/${path}`;
-      console.log(uri);
-      filesArr.push(uri);
-      // const metadata = await client.store({
-      //   name:  authorname,
-      //   description: 'NFT',
-      //   symbol: symbol,
-      //   tokenPrice : tokenPrice,
-      //   tokenQuantity : tokenQuantity,
-      //   image: imageUrl,
+      // if (txURI) {
+      //   setLoading(false);
+      //   const nftContract = new ethers.Contract(
+      //     tokenContractAddress,
+      //     lotteryEscrowABI,
+      //     signer
+      //   );
+      //   tokenIds.map(async (tokenID) => {
+      //     let AllUris = [];
+      //     let uriss = await nftContract.tokenURI(parseInt(tokenID));
+      //     AllUris.push(uriss);
+      //     setAllTokenURIs(AllUris);
+      //     console.log(uriss,"AllUris");
+      //   });
+      //  }
 
-      // });
-      // console.log(metadata,"Metadata of NFT Storage");
+      
     });
-
-    console.log(filesArr, "filesArr");
-    console.log(ImgArr, "ImgArr");
-
+    const blob = new Blob(
+      [
+        JSON.stringify({
+          authorname,
+          symbol,
+          tokenPrice,
+          tokenQuantity,
+            ImgArr,
+        }),
+      ],
+      { type: "application/json" }
+    );
+    const files = [new File([blob], "data.json")];
+    const path = await addDataToIPFS(files[0]);
+    const uri = `https://ipfs.io/ipfs/${path}`;
+    filesArr.push(uri);
+    setAllFilesArr(filesArr);
     setLoading(false);
     notify();
-  }
-  //console.log(ImgArr, "ImgArr22");
-  //console.log(AllTokenURIs, "AllTokenURIs out of a function");
-
+  };
+  useEffect(() => {
+    console.log(ImgArr, "ImgArr");
+    console.log(AllFilesArr, "AllFilesArr");
+  },[ImgArr,AllFilesArr])
+    
   let Item = {
     authorname: authorname,
     tokenPrice: tokenPrice,
@@ -252,11 +213,9 @@ const LotteryEscrowContextProvider = (props) => {
     symbol: symbol,
   };
 
-  // const notify = () => toast("NFTs are uploaded!");
   return (
     <LotteryEscrowContext.Provider
       value={{
-        ImgUrl,
         ImgArr,
         AllTokenURIs,
         authorname,
