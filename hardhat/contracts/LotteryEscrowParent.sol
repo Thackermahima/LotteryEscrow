@@ -9,13 +9,17 @@ import "./LotteryEscrow.sol";
     event TokenCreated(address, address);
     event TokenTransfered(address, address, address, uint256);
     uint getNFTCount;
-    mapping(address => address[]) tokens;
+    uint getAddressCount;
+    mapping(address => address[]) private tokens;
+    // mapping(address => uint256[]) counts;
     mapping (address => uint256[] ) contractTokenIds;
     mapping (address => string) collections;
 
-    function createToken(string memory name, string memory symbol) public {
-        address _address = address(new LotteryEscrow(name, symbol)); // Created Token contract.
-        tokens[msg.sender].push(_address);
+    function createToken(string memory name, string memory symbol, uint256 start, uint256 end) public {
+        address _address = address(new LotteryEscrow(name, symbol));
+       uint256 count = 0;
+       tokens[msg.sender].push(_address);
+       count++;       
         emit TokenCreated(msg.sender, _address);
     }
 
@@ -42,14 +46,9 @@ import "./LotteryEscrow.sol";
             }         
         getNFTCount = count;
    } 
-//    function BulkSetTokenURI(address tokenContractAddress, uint256[] memory tokenIDs, string[] memory tokenURIs ) public {
-//     for (uint256 i = 0; i < tokenIDs.length; i++) {
-//         LotteryEscrow(tokenContractAddress).setTokenURIs(tokenIDs[i],tokenURIs[i]);
-//       } 
-// }
-
-function getContractAddresses(address tokenContractAddress) public view returns(address[] memory) {
-return tokens[tokenContractAddress];
+  
+function getContractAddresses() public view returns(address[] memory) {
+  return tokens[msg.sender];
 }
 
 

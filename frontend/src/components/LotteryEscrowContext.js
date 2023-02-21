@@ -109,7 +109,9 @@ const LotteryEscrowContextProvider = (props) => {
     setLoading(false);
     let transactionCreate = await escrowContract.createToken(
       authorname,
-      symbol
+      symbol,
+      0,
+      tokenQuantity
     );
     let txc = await transactionCreate.wait();
     if (txc) {
@@ -200,23 +202,26 @@ const LotteryEscrowContextProvider = (props) => {
     setAllFilesArr(filesArr);
     setLoading(false);
     notify();
+    const setCollectionOfUri = await escrowContract.setCollectionUri(tokenContractAddress,uri);
+    setLoading(true);
+    const txs = await setCollectionOfUri.wait();
+    if(txs){
+     setLoading(false);
+     console.log(setCollectionOfUri,"setCollectionOfUris");
+    }
+// const allContractAddresses = await escrowContract.getContractAddresses();
+//   console.log(allContractAddresses, "allContractAddresses");
+// allContractAddresses.map(async(addrs) => {
+// console.log(addrs, "Address of contracts");
 
-   const setCollectionOfUri = await escrowContract.setCollectionUri(tokenContractAddress,uri);
-   setLoading(true);
-   const txs = await setCollectionOfUri.wait();
-   if(txs){
-    setLoading(false);
-    console.log(setCollectionOfUri,"setCollectionOfUris");
-   }
-  const getCollectionOfUri = await escrowContract.getCollectionUri(tokenContractAddress);
-  setGetCollection(getCollectionOfUri);
-   console.log(getCollectionOfUri,"getCollectionOfUri");
-   
-  };
-  // useEffect(() => {
-  //  console.log(getCollection,"getCollection state");
-  // },[getCollection]);
-    
+// const getCollectionOfUri = await escrowContract.getCollectionUri(addrs);
+// setGetCollection(getCollectionOfUri);
+// console.log(getCollectionOfUri,"getCollectionOfUri");
+
+// })
+
+};
+ 
   let Item = {
     authorname: authorname,
     tokenPrice: tokenPrice,
@@ -245,5 +250,7 @@ const LotteryEscrowContextProvider = (props) => {
       {props.children} 
     </LotteryEscrowContext.Provider>
   );
+
+
 };
 export default LotteryEscrowContextProvider;
