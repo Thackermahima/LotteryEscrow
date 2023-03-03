@@ -1,81 +1,109 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
-
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./LotteryEscrow.sol";
-   
- contract LotteryEscrowParent is Ownable{
-
-    event TokenCreated(address, address);
-    event TokenTransfered(address, address, address, uint256);
-    uint getNFTCount;
-    uint getAddressCount;
-    mapping(address => address[]) private tokens;
-    // mapping(address => uint256[]) counts;
-    mapping (address => uint256[] ) contractTokenIds;
-    mapping (address => string) collections;
-
-    function createToken(string memory name, string memory symbol, uint256 start, uint256 end) public {
-        address _address = address(new LotteryEscrow(name, symbol));
-       uint256 count = 0;
-       tokens[msg.sender].push(_address);
-       count++;       
-        emit TokenCreated(msg.sender, _address);
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol"; 
+contract LotteryEscrow is ERC721URIStorage{
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdCounter;
+    uint256 public feePercent = 2; //the fee percntage on sales
+    mapping(uint256 => address payable) public OwnerOfAnNFT;
+    mapping(address => uint256[]) public soldItems;
+    address payable public winner;
+    struct MarketItem {
+        address nftContract;
+        uint256 tokenId;
+        address payable seller;
+        address payable owner;
+        uint256 price;
+        bool sold;
     }
-
-    function setCollectionUri(address collectionContract, string memory uri) public{
-            collections[collectionContract] = uri;
-    }
-
-    function getCollectionUri(address collectionContract) public view returns(string memory){
-       return collections[collectionContract];
-    }
-    
-    function bulkMintERC721(
-        address payable mintor,
-        address payable tokenAddress,
-        uint256 start,
-        uint256 end,
+    event MarketItemCreated(
+        address indexed nftContract,
+        uint256 indexed tokenId,
+        address seller,
+        address owner,
         uint256 price
-    ) public {
-         uint256 count = 0;
-        for (uint256 i = start; i < end; i++) {
-         uint256 tokenId =  LotteryEscrow(tokenAddress).safeMint(mintor , price);
-        contractTokenIds[tokenAddress].push(tokenId);
-                          count++;             
-            }         
-        getNFTCount = count;
-   } 
-  
-function getContractAddresses() public view returns(address[] memory) {
-  return tokens[msg.sender];
-}
-
-
-function getAllTokenId(address tokenContractAddress) public view returns (uint[] memory){
-    uint[] memory ret = new uint[](getNFTCount);
-    for (uint i = 0; i < getNFTCount; i++) {
-        ret[i] = contractTokenIds[tokenContractAddress][i];
-    } 
-    return ret;
-}
-
-      function callPurchaseItem(
-         uint256 tokenId,
-         address tokenAddress
-      )public payable{
-LotteryEscrow(tokenAddress).purchaseItem(tokenId,msg.sender);
-      }
-
-    function transferToken(
+    );
+    event Bought(
+        address indexed nft,
+        uint256 tokenId,
+        uint256 price,
+        address indexed seller,
+        address indexed buyer
+    );
+    mapping(uint256 => MarketItem) public marketItems;
+    constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol)
+    {}
+    function safeMint(address payable to, uint256 price) public returns (uint256) {
+        //require(to != address(0), "The recipient address must not be zero");   
+        uint256 tokenId = _tokenIdCounter.current();
+        require(OwnerOfAnNFT[tokenId] == address(0), "The tokenId is already taken");
+        // Store the owner of the tokenId or NFT
+        OwnerOfAnNFT[tokenId] = to;
+         _safeMint(msg.sender, tokenId);
+        marketItems[tokenId] = MarketItem(
+            address(this),
+            tokenId,
+            payable(to),
+            payable(address(0)),
+            price,
+            false
+        );
+        _tokenIdCounter.increment();
+        emit MarketItemCreated(address(this), tokenId, to, address(0), price);
+        return tokenId;
+    }
+    // function setTokenURIs(uint256 tokenIDs,string memory tokenURIs) public {
+    //     //for (uint256 i = 0; i < tokenIDs.length; i++) {
+    //       _setTokenURI(tokenIDs,tokenURIs);
+    //     //} 
+    // }
+    //Function to select a tokenID randomely
+    function selectRandomTokenId() public view returns (uint256) {
+        uint256[] memory allTokenIds;
+        uint256 count = 0;
+        for (uint256 tokenId = 0; tokenId < 100000; tokenId++) { // for demonstration purposes
+            if (OwnerOfAnNFT[tokenId] != address(0)) {
+                allTokenIds[count] = tokenId;
+                count++;
+            }
+        }          
+        return allTokenIds[uint256(keccak256(abi.encodePacked(block.timestamp))) % count];
+    }
+    function playLottery() public {
+        uint256 randomTokenId = selectRandomTokenId();
+        winner = OwnerOfAnNFT[randomTokenId];
+        winner.transfer(address(this).balance);
+    }
+    function transferTokens(
         address from,
         address payable to,
-        address  token,
+        address token,
         uint256 amount
     ) public {
-        LotteryEscrow(token).transferTokens(from, to, token, amount);
-        emit TokenTransfered(from, to, token, amount);
+        if (token != address(0)) {
+            IERC721(token).transferFrom(from, to, amount);
+        } else {
+            require(to.send(amount), "Transfer of ETH to receiver failed");
+        }
     }
-       
+    function purchaseItem(uint256 tokenId, address collectionContract) external payable {
+        //uint256 _totalPrice = getTotalPrice(tokenId);
+        MarketItem memory item = marketItems[tokenId];
+        IERC721(item.nftContract).getApproved(tokenId);
+        require(!item.sold, "item already sold");
+        payable(item.seller).transfer(msg.value);
+        item.sold = true; 
+        IERC721(item.nftContract).transferFrom(item.seller, msg.sender, tokenId);
+        marketItems[tokenId].owner = payable(msg.sender);
+        soldItems[collectionContract].push(tokenId);
+        emit Bought(address(this), item.tokenId, msg.value, item.seller, msg.sender);
+    } 
+    function getPurchaseItem(address  collectionContract) public view returns(uint256[] memory){
+        return soldItems[collectionContract];
+    }
+    function getTotalPrice(uint256 tokenId) public view returns (uint256) {
+        return ((marketItems[tokenId].price * (100 + feePercent)) / 100);
+    }
+   
 }
-

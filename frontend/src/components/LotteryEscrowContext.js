@@ -109,9 +109,7 @@ const LotteryEscrowContextProvider = (props) => {
     setLoading(false);
     let transactionCreate = await escrowContract.createToken(
       authorname,
-      symbol,
-      0,
-      tokenQuantity
+      symbol
     );
     let txc = await transactionCreate.wait();
     if (txc) {
@@ -143,42 +141,18 @@ const LotteryEscrowContextProvider = (props) => {
     var result = await Promise.all(
       tokenIds.map(async (tokenId) => {
         // console.log(parseInt(tokenId), "parseInt(tokenId)");
-        tokenIdArr.push(parseInt(tokenId));
+        // tokenIdArr.push(tokenId.toString());
         const imgSVG = createSvgFromText(tokenId.toString());
         // console.log(imgSVG, "imgSVG");
         const svgImg = await convertSVGToBuffer(imgSVG);
         const ipfsHash = await addDataToIPFS(svgImg);
         // console.log(ipfsHash, "ipfsHash from addDataToIPFS function");
-        const imageUrl = `https://ipfs.io/ipfs/${ipfsHash}`;
+        const imageUrl = {url : `https://ipfs.io/ipfs/${ipfsHash}`, tokenID : tokenId.toString()};
+        const tokenIds = tokenId.toString();
         imageArr.push(imageUrl);
   
         setImgArr(imageArr);
         return imageUrl;
-        
-        // const tokenURIs = await escrowContract.BulkSetTokenURI(
-        //   tokenContractAddress,
-        //   tokenIdArr,
-        //   imageArr
-        // );
-        // let txURI = await tokenURIs.wait();
-  
-        // if (txURI) {
-        //   setLoading(false);
-        //   const nftContract = new ethers.Contract(
-        //     tokenContractAddress,
-        //     lotteryEscrowABI,
-        //     signer
-        //   );
-        //   tokenIds.map(async (tokenID) => {
-        //     let AllUris = [];
-        //     let uriss = await nftContract.tokenURI(parseInt(tokenID));
-        //     AllUris.push(uriss);
-        //     setAllTokenURIs(AllUris);
-        //     console.log(uriss,"AllUris");
-        //   });
-        //  }
-  
-        
       })
     ) 
 
@@ -189,7 +163,7 @@ const LotteryEscrowContextProvider = (props) => {
           symbol,
           tokenPrice,
           tokenQuantity,
-          result,
+          result
         }), 
       ],
       { type: "application/json" }
